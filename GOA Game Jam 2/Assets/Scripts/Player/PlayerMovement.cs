@@ -9,15 +9,13 @@ public class PlayerMovement : MonoBehaviour
 
     [Header("Inputs")]
     public KeyCode jumpKey;
-    public KeyCode dashKey, runKey;
+    public KeyCode dashKey, runKey, crouchKey;
 
     [Header("Physics")]
     public Transform groundCheck;
     public LayerMask groundLayer;
     float originalGravity;
 
-    [Header("Other")]
-    bool isCrouching = false;
     bool isRunning = false;
 
     [Header("Dash")]
@@ -32,6 +30,11 @@ public class PlayerMovement : MonoBehaviour
     private Vector3 mousePos, mouseRotation;
     float rotZ, originalFixedDeltaTime;
 
+    [Header("Crouch")]
+    public float slideForce;
+    bool isCrouching = false, isSliding = false;
+    public Collider2D normalCollider, crouchCollider, slideCollider;
+
     private bool isGrounded()
     {
         return Physics2D.OverlapCircle(groundCheck.position, 0.2f, groundLayer);
@@ -40,6 +43,10 @@ public class PlayerMovement : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        normalCollider.enabled = true;
+        crouchCollider.enabled = false;
+        slideCollider.enabled = false;
+
         originalGravity = rb.gravityScale;
         currentSpeed = walkSpeed;
         mainCam = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
@@ -58,7 +65,7 @@ public class PlayerMovement : MonoBehaviour
         dashPoint.rotation = Quaternion.Euler(0, 0, rotZ);
 
         if (isRunning) currentSpeed = runSpeed;
-        else currentSpeed = walkSpeed;
+        else if (!isCrouching) currentSpeed = walkSpeed;
 
         float horizontalMovement = Input.GetAxis("Horizontal");
         rb.velocity = new Vector2(horizontalMovement * currentSpeed, rb.velocity.y);
@@ -71,15 +78,11 @@ public class PlayerMovement : MonoBehaviour
         {
             //Jumping moving animation
         }
-
-        float verticalAxis = Input.GetAxis("Vertical");
-        if (verticalAxis < 0.3f && isGrounded()) StartCrouch();
-        else EndCrouch();
     }
 
     void MyInput()
     {
-        if (Input.GetKeyDown(runKey))
+        if (Input.GetKeyDown(runKey) && !isCrouching)
         {
             //Run animation
             isRunning = true;
@@ -104,6 +107,9 @@ public class PlayerMovement : MonoBehaviour
         {
             if (Input.GetKeyUp(dashKey)) LongDash();
         }
+
+        if (Input.GetKeyDown(crouchKey) && !isSliding) StartCrouch();
+        if (Input.GetKeyUp(crouchKey)) EndCrouch();
     }
 
     void StartCrouch()
@@ -114,18 +120,30 @@ public class PlayerMovement : MonoBehaviour
             if (!isRunning)
             {
                 //Crouch animation
+                currentSpeed = 6;
+                normalCollider.enabled = false;
+                crouchCollider.enabled = true;
             }
-            else
+            else if (Mathf.Abs(Input.GetAxis("Horizontal")) > 0)
             {
                 //Slide animation
+                isSliding = true;
+                normalCollider.enabled = false;
+                slideCollider.enabled = true;
+                rb.AddForce(new Vector2(Input.GetAxis("Horizontal") * slideForce, 0));
             }
         }
     }
 
     void EndCrouch()
     {
+        currentSpeed = walkSpeed;
         isCrouching = false;
+        isSliding = false;
         //Standing animation
+        crouchCollider.enabled = false;
+        slideCollider.enabled = false;
+        normalCollider.enabled = true;
     }
 
     void Dash()
