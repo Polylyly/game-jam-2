@@ -4,8 +4,11 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
+    public static PlayerMovement instance;
+    public SpriteRenderer sprite;
     public float walkSpeed, jumpForce, slideSpeed, runSpeed, currentSpeed;
     public Rigidbody2D rb;
+    Animator animator;
 
     [Header("Inputs")]
     public KeyCode jumpKey;
@@ -23,7 +26,7 @@ public class PlayerMovement : MonoBehaviour
     public float dashForce, dashTime, dashCooldown;
     public bool longDashStarted = false;
     float dashStartTime;
-    bool readyToDash, isDashing, longDashFirstCheck;
+    bool readyToDash, longDashFirstCheck;
     public TrailRenderer dashTrail;
     public Transform dashPoint;
     private Camera mainCam;
@@ -32,7 +35,7 @@ public class PlayerMovement : MonoBehaviour
 
     [Header("Crouch")]
     public float slideForce;
-    bool isCrouching = false, isSliding = false;
+    public bool isCrouching = false, isSliding = false;
     public Collider2D normalCollider, crouchCollider, slideCollider;
 
     private bool isGrounded()
@@ -43,6 +46,9 @@ public class PlayerMovement : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        instance = this;
+        animator = GetComponentInChildren<Animator>();
+
         normalCollider.enabled = true;
         crouchCollider.enabled = false;
         slideCollider.enabled = false;
@@ -68,15 +74,26 @@ public class PlayerMovement : MonoBehaviour
         else if (!isCrouching) currentSpeed = walkSpeed;
 
         float horizontalMovement = Input.GetAxis("Horizontal");
+
+        if (horizontalMovement < 0) sprite.flipX = true;
+        else if (horizontalMovement > 0) sprite.flipX = false;
+
         rb.velocity = new Vector2(horizontalMovement * currentSpeed, rb.velocity.y);
         if (isGrounded())
         {
-            //if (isRunning) //Running animation
-            //else //Walking animation
+            animator.SetBool("Jumping", false);
+
+            if (isRunning && !isCrouching && !isSliding) animator.SetBool("Running", true);
+            else if (Mathf.Abs(horizontalMovement) > 0.1f && !isCrouching) animator.SetBool("Walking", true);
+            else
+            {
+                animator.SetBool("Running", false);
+                animator.SetBool("Walking", false);
+            }
         }
-        else
+        else if (!isGrounded())
         {
-            //Jumping moving animation
+            animator.SetBool("Jumping", true);
         }
     }
 
@@ -84,12 +101,10 @@ public class PlayerMovement : MonoBehaviour
     {
         if (Input.GetKeyDown(runKey) && !isCrouching)
         {
-            //Run animation
             isRunning = true;
         }
         if (Input.GetKeyUp(runKey))
         {
-            //Walk animation
             isRunning = false;
         }
 
@@ -117,16 +132,17 @@ public class PlayerMovement : MonoBehaviour
         if (!isCrouching)
         {
             isCrouching = true;
+            animator.SetBool("Walking", false);
+            animator.SetBool("Running", false);
+            animator.SetBool("Crouching", true);
             if (!isRunning)
             {
-                //Crouch animation
                 currentSpeed = 6;
                 normalCollider.enabled = false;
                 crouchCollider.enabled = true;
             }
             else if (Mathf.Abs(Input.GetAxis("Horizontal")) > 0)
             {
-                //Slide animation
                 isSliding = true;
                 normalCollider.enabled = false;
                 slideCollider.enabled = true;
@@ -137,10 +153,10 @@ public class PlayerMovement : MonoBehaviour
 
     void EndCrouch()
     {
+        animator.SetBool("Crouching", false);
         currentSpeed = walkSpeed;
         isCrouching = false;
         isSliding = false;
-        //Standing animation
         crouchCollider.enabled = false;
         slideCollider.enabled = false;
         normalCollider.enabled = true;
@@ -150,7 +166,6 @@ public class PlayerMovement : MonoBehaviour
     {
         if (readyToDash)
         {
-            //Dash animation
             longDashFirstCheck = false;
             dashForce = mousePos.x - transform.position.x;
             dashForce = Mathf.Clamp(dashForce, -4, 4);
@@ -162,7 +177,7 @@ public class PlayerMovement : MonoBehaviour
 
     void LongDashStart()
     {
-        //Long dash animation
+        animator.SetBool("Dashing", true);
         Time.timeScale = 0.05f;
         Time.fixedDeltaTime = Time.timeScale * 0.02f;
         longDashStarted = true;
@@ -171,10 +186,14 @@ public class PlayerMovement : MonoBehaviour
 
     void LongDash()
     {
+        animator.Play("Player-Dash");
         Vector2 dashVector = mousePos - transform.position;
         dashForce = Mathf.Abs(dashVector.magnitude);
         dashForce = Mathf.Clamp(dashForce, 0, 7);
         rb.MovePosition(transform.position + dashPoint.right * dashForce);
+
+        if (dashVector.x < 0) sprite.flipX = true;
+        else sprite.flipX = false;
 
         readyToDash = false;
         longDashStarted = false;
@@ -185,6 +204,7 @@ public class PlayerMovement : MonoBehaviour
     IEnumerator DashNormalTime()
     {
         yield return new WaitForSeconds(0.01f);
+        animator.SetBool("Dashing", false);
         Time.timeScale = 1;
         Time.fixedDeltaTime = originalFixedDeltaTime;
     }
