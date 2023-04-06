@@ -8,8 +8,9 @@ public class PlayerAttack : MonoBehaviour
     public KeyCode parryKey;
     public KeyCode attackKey;
 
-    [Header("Attack")]
-    public int damage;
+    [Header("AttackSphere")]
+    public Transform attackPosition;
+    public LayerMask damageable;
 
     [Header("Parry")]
     public float parryLength;
@@ -42,5 +43,15 @@ public class PlayerAttack : MonoBehaviour
         isParrying = true;
         yield return new WaitForSeconds(parryLength);
         isParrying = false;
+    }
+
+    //Animation event
+    public void DoDamage(int damage, float range)
+    {
+        Collider[] colliders = Physics.OverlapSphere(attackPosition.position, range);
+        foreach(Collider col in colliders)
+        {
+            if (col.GetComponent<Damageable>()) col.GetComponent<Damageable>().TakeDamage();
+        }
     }
 }
