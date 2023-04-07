@@ -7,6 +7,8 @@ public class PlayerMovement : MonoBehaviour
     public static PlayerMovement instance;
     public SpriteRenderer sprite;
     public float walkSpeed, jumpForce, slideSpeed, runSpeed, currentSpeed;
+    public float acceleration, deceleration;
+    public float velPower;
     public Rigidbody2D rb;
     Animator animator;
 
@@ -78,7 +80,7 @@ public class PlayerMovement : MonoBehaviour
         if (horizontalMovement < 0) sprite.flipX = true;
         else if (horizontalMovement > 0) sprite.flipX = false;
 
-        rb.velocity = new Vector2(horizontalMovement * currentSpeed, rb.velocity.y);
+        MovementHandler(horizontalMovement, currentSpeed);
         if (isGrounded())
         {
             animator.SetBool("Jumping", false);
@@ -219,5 +221,18 @@ public class PlayerMovement : MonoBehaviour
     {
         //Jump animation
         rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+    }
+
+    void MovementHandler(float theMovement, float speed)
+    {
+        float targetSpeed = speed * theMovement;
+
+        float speedDif = targetSpeed - rb.velocity.x;
+
+        float accelRate = (Mathf.Abs(targetSpeed) > 0.01f) ? acceleration : deceleration;
+
+        float movement = Mathf.Pow(Mathf.Abs(speedDif) * accelRate, velPower) * Mathf.Sign(speedDif);
+
+        rb.AddForce(movement * Vector2.right);
     }
 }
