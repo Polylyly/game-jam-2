@@ -80,7 +80,7 @@ public class PlayerMovement : MonoBehaviour
         if (horizontalMovement < 0) sprite.flipX = true;
         else if (horizontalMovement > 0) sprite.flipX = false;
 
-        MovementHandler(horizontalMovement, currentSpeed);
+        rb.velocity = new Vector2(horizontalMovement * currentSpeed, rb.velocity.y);
         if (isGrounded())
         {
             animator.SetBool("Jumping", false);

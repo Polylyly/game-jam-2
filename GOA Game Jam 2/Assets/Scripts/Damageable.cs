@@ -6,11 +6,11 @@ public class Damageable : MonoBehaviour
 {
     public bool isEnemy;
 
-    public void TakeDamage()
+    public void TakeDamage(int damage)
     {
         if (isEnemy)
         {
-            //Enemy damage
+            GetComponent<EnemyHealth>().TakeDamage(damage);
         }
         if (!isEnemy)
         {
