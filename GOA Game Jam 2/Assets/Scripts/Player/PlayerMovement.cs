@@ -1,16 +1,23 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class PlayerMovement : MonoBehaviour
 {
     public static PlayerMovement instance;
+    public CameraController instanceCamera;
+    private bool won;
     public SpriteRenderer sprite;
     public float walkSpeed, jumpForce, slideSpeed, runSpeed, currentSpeed;
     public float acceleration, deceleration;
     public float velPower;
     public Rigidbody2D rb;
+    public List<Transform> spawnPoints;
+    public Transform lastSpawnPoint;
     Animator animator;
+
+    public TMP_Text winText;
 
     [Header("Inputs")]
     public KeyCode jumpKey;
@@ -235,4 +242,34 @@ public class PlayerMovement : MonoBehaviour
 
         rb.AddForce(movement * Vector2.right);
     }
+
+    public void OnTriggerEnter2D(Collider2D collision)
+    {
+        Invoke("Portal", 0.5f);
+    }
+
+    public void Portal()
+    {
+        if (spawnPoints.Count > 0)
+        {
+            int index = Random.Range(0, spawnPoints.Count - 1);
+            Transform temp = spawnPoints[index];
+            transform.position = temp.position;
+
+            spawnPoints.Remove(temp);
+            instanceCamera.newLevel = true;
+        }
+        else if ((spawnPoints.Count == 0) && !won)
+        {
+            transform.position = lastSpawnPoint.position;
+
+            instanceCamera.newLevel = true;
+            won = true;
+        }
+        else if (won)
+        {
+            winText.gameObject.SetActive(true);
+        }
+    }
 }
+    

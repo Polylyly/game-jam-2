@@ -7,6 +7,7 @@ public class CameraController : MonoBehaviour
     public GameObject player;
     public float horizontalOffset, verticalOffset;
     public float offsetSmoothing;
+    public bool newLevel;
     private Vector3 playerPosition;
 
     // Start is called before the first frame update
@@ -42,5 +43,16 @@ public class CameraController : MonoBehaviour
 
         transform.position = Vector3.Lerp(transform.position, playerPosition, offsetSmoothing * Time.deltaTime);
 
+        if (newLevel)
+        {
+            TelportCamera();
+
+        }
+    }
+
+    public void TelportCamera()
+    {
+        transform.position = new Vector3(player.transform.position.x, player.transform.position.y, transform.position.z);
+        newLevel = false;
     }
 }
