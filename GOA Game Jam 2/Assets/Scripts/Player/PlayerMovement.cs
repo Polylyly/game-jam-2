@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.SceneManagement;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -16,8 +17,12 @@ public class PlayerMovement : MonoBehaviour
     public List<Transform> spawnPoints;
     public Transform lastSpawnPoint;
     Animator animator;
+    public AudioClip victorySound;
 
     public TMP_Text winText;
+    bool win = false;
+    public TextMeshProUGUI timer;
+    float time, startTime;
 
     [Header("Inputs")]
     public KeyCode jumpKey;
@@ -52,9 +57,19 @@ public class PlayerMovement : MonoBehaviour
         return Physics2D.OverlapCircle(groundCheck.position, 0.2f, groundLayer);
     }
 
+    private void Awake()
+    {
+        jumpKey = (KeyCode)System.Enum.Parse(typeof(KeyCode), PlayerPrefs.GetString("Jump Key"));
+        dashKey = (KeyCode)System.Enum.Parse(typeof(KeyCode), PlayerPrefs.GetString("Dash Key"));
+        runKey = (KeyCode)System.Enum.Parse(typeof(KeyCode), PlayerPrefs.GetString("Run Key"));
+        crouchKey = (KeyCode)System.Enum.Parse(typeof(KeyCode), PlayerPrefs.GetString("Crouch Key"));
+    }
+
     // Start is called before the first frame update
     void Start()
     {
+        startTime = Time.time;
+
         instance = this;
         animator = GetComponentInChildren<Animator>();
 
@@ -72,6 +87,14 @@ public class PlayerMovement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (!win)
+        {
+            time = (Time.time - startTime) * 100;
+            time = Mathf.RoundToInt(time);
+            time /= 100;
+            timer.SetText(time.ToString());
+        }
+
         MyInput();
 
         mousePos = mainCam.ScreenToWorldPoint(Input.mousePosition);
@@ -177,7 +200,7 @@ public class PlayerMovement : MonoBehaviour
         {
             longDashFirstCheck = false;
             dashForce = mousePos.x - transform.position.x;
-            dashForce = Mathf.Clamp(dashForce, -4, 4);
+            dashForce = Mathf.Clamp(dashForce, -6, 6);
             rb.MovePosition(transform.position + transform.right * dashForce);
             readyToDash = false;
             StartCoroutine(DashGetReady());
@@ -245,7 +268,7 @@ public class PlayerMovement : MonoBehaviour
 
     public void OnTriggerEnter2D(Collider2D collision)
     {
-        Invoke("Portal", 0.5f);
+        if(collision.tag == "Portal") Invoke("Portal", 0.5f);
     }
 
     public void Portal()
@@ -268,8 +291,23 @@ public class PlayerMovement : MonoBehaviour
         }
         else if (won)
         {
+            win = true;
             winText.gameObject.SetActive(true);
+            PlayerHealth.instance.currentHealth = PlayerHealth.instance.maxHealth;
+            PlayerHealth.instance.enabled = false;
+            AudioSource audio = GameObject.Find("Audio Source").GetComponent<AudioSource>();
+            audio.Stop();
+            audio.clip = victorySound;
+            audio.loop = false;
+            audio.Play();
+            StartCoroutine(MainMenu());
         }
+    }
+
+    IEnumerator MainMenu()
+    {
+        yield return new WaitForSeconds(victorySound.length + 1);
+        SceneManager.LoadScene("TitleScreen");
     }
 }
     

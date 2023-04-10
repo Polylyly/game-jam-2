@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using TMPro;
 
 public class PlayerHealth : MonoBehaviour
 {
@@ -34,7 +36,15 @@ public class PlayerHealth : MonoBehaviour
 
     void Die()
     {
+        PlayerMovement.instance.enabled = false;
+        PlayerAttack.instance.enabled = false;
+        StartCoroutine(MainMenu());
+    }
 
+    IEnumerator MainMenu()
+    {
+        yield return new WaitForSeconds(4);
+        SceneManager.LoadScene("TitleScreen");
     }
 
     public void Heal()

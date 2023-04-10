@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class PlayerAttack : MonoBehaviour
 {
+    public static PlayerAttack instance;
+
     [Header("Inputs")]
     public KeyCode parryKey;
     public KeyCode attackKey;
@@ -23,9 +25,16 @@ public class PlayerAttack : MonoBehaviour
     bool readyToParry;
     public float parryCooldown;
 
+    private void Awake()
+    {
+        parryKey = (KeyCode)System.Enum.Parse(typeof(KeyCode), PlayerPrefs.GetString("Parry Key"));
+        attackKey = (KeyCode)System.Enum.Parse(typeof(KeyCode), PlayerPrefs.GetString("Attack Key"));
+    }
+
     // Start is called before the first frame update
     void Start()
     {
+        instance = this;
         readyToAttack = true;
         readyToParry = true;
     }
